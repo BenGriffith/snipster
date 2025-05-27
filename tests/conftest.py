@@ -2,10 +2,10 @@ import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
 from src.snipster.models import Language, Snippet
-from src.snipster.repo import InMemoryRepository
+from src.snipster.repo import DatastoreRepository, InMemoryRepository
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def test_engine():
     engine = create_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(engine)
@@ -23,10 +23,9 @@ def repo_in_memory():
     return InMemoryRepository()
 
 
-@pytest.fixture()
+@pytest.fixture(scope="function")
 def snippet_one():
     snippet = Snippet(
-        id=1,
         title="first snippet",
         code="print('hello world')",
         description=None,
@@ -37,10 +36,9 @@ def snippet_one():
     return snippet
 
 
-@pytest.fixture()
+@pytest.fixture(scope="function")
 def snippet_two():
     snippet = Snippet(
-        id=2,
         title="second snippet",
         code="print('french bulldogs are awesome')",
         description=None,
@@ -49,3 +47,8 @@ def snippet_two():
         favorite=False,
     )
     return snippet
+
+
+@pytest.fixture()
+def repo_in_datastore(session):
+    return DatastoreRepository(session)

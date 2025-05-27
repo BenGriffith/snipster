@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
 
+from sqlmodel import select
+
 from src.snipster.exceptions import SnippetExists, SnippetNotFound
+from src.snipster.models import Snippet
 
 
 class SnippetRepository(ABC):
@@ -39,7 +42,7 @@ class InMemoryRepository(SnippetRepository):
     def get(self, snippet_id):
         if snippet_id in self.repository:
             return self.repository[snippet_id]
-        raise SnippetNotFound(snippet_id)
+        return None
 
     def delete(self, snippet_id):
         if snippet_id in self.repository:
@@ -49,17 +52,42 @@ class InMemoryRepository(SnippetRepository):
 
 
 class DatastoreRepository(SnippetRepository):
-    def __init__(self):
-        pass
+    def __init__(self, session):
+        self.session = session
 
     def add(self, snippet):
-        pass
+        result = self.get(snippet.id)
+        if result is not None:
+            raise SnippetExists(snippet.id)
+
+        self.session.add(snippet)
+        self.session.commit()
+        self.session.refresh(snippet)
+        return (
+            f"Snippet ID: {snippet.id} was created and added to the Snippet Repository"
+        )
 
     def all(self):
-        pass
+        query = select(Snippet)
+        result = self.session.exec(query).all()
+        if result:
+            result = [row.model_dump() for row in result]
+            return result
 
-    def get(self, snippet):
-        pass
+    def get(self, snippet_id):
+        query = select(Snippet).where(Snippet.id == snippet_id)
+        result = self.session.exec(query).first()
+        if result:
+            return result.model_dump()
 
-    def delete(self, snippet):
-        pass
+    def delete(self, snippet_id):
+        query = select(Snippet).where(Snippet.id == snippet_id)
+        result = self.session.exec(query).first()
+        if result:
+            id = result.id
+            self.session.delete(result)
+            self.session.commit()
+            return (
+                f"Snippet ID: {id} was deleted and removed from the Snippet Repository"
+            )
+        raise SnippetNotFound(snippet_id)
