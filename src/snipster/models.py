@@ -27,5 +27,6 @@ class Snippet(SQLModel, table=True):
     favorite: bool
 
 
-engine = create_engine("sqlite:///snippets.db")
-SQLModel.metadata.create_all(engine)
+if __name__ == "__main__":
+    engine = create_engine("sqlite:///snippets.db")
+    SQLModel.metadata.create_all(engine)
