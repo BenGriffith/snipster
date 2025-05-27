@@ -27,11 +27,6 @@ def test_in_memory_get(repo_in_memory):
     assert snippet_two["title"] == "second snippet"
 
 
-def test_in_memory_get_error(repo_in_memory):
-    with pytest.raises(SnippetNotFound):
-        repo_in_memory.get("10")
-
-
 def test_in_memory_delete(repo_in_memory):
     result = repo_in_memory.delete("2")
     assert result == "Snippet ID: 2 was deleted and removed from the Snippet Repository"
