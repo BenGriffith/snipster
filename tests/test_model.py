@@ -1,4 +1,4 @@
-from snipster.models import Language, Snippet
+from src.snipster.models import Language, Snippet
 
 
 def test_snippet(session):

@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from enum import Enum
 
 from sqlalchemy import Enum as SQLAlchemyEnum
-from sqlmodel import Field, SQLModel, create_engine
+from sqlmodel import Column, Field, SQLModel, create_engine
 
 
 class Language(Enum):
@@ -20,12 +20,13 @@ class Snippet(SQLModel, table=True):
     title: str
     code: str
     description: str | None
-    language: Language = Field(sa_column=SQLAlchemyEnum(Language))
+    language: Language = Field(sa_column=Column(SQLAlchemyEnum(Language)))
     tags: str | None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     favorite: bool
 
 
-engine = create_engine("sqlite:///snippets.db")
-SQLModel.metadata.create_all(engine)
+if __name__ == "__main__":
+    engine = create_engine("sqlite:///snippets.db")
+    SQLModel.metadata.create_all(engine)
