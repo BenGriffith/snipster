@@ -1,6 +1,9 @@
+import json
+
 import pytest
 
 from src.snipster.exceptions import SnippetExists, SnippetNotFound
+from src.snipster.repo import JSONRepository
 
 
 def test_in_memory_add(repo_in_memory, snippet_one):
@@ -72,3 +75,39 @@ def test_datastore_delete(repo_in_datastore):
 def test_datastore_delete_error(repo_in_datastore):
     with pytest.raises(SnippetNotFound):
         repo_in_datastore.delete(100)
+
+
+def test_json_repository_add(temp_json_file, snippet_one, snippet_two):
+    snippet_one.id = 1
+    snippet_two.id = 2
+    with JSONRepository(temp_json_file) as repo:
+        assert (
+            repo.add(snippet_one)
+            == "Snippet ID: 1 was created and added to the Snippet Repository"
+        )
+        assert (
+            repo.add(snippet_two)
+            == "Snippet ID: 2 was created and added to the Snippet Repository"
+        )
+
+    with open(temp_json_file) as file:
+        final = json.load(file)
+        assert len(final) == 2
+
+
+def test_json_repository_delete(temp_json_file, snippet_one, snippet_two):
+    snippet_one.id = 10
+    snippet_two.id = 20
+    with JSONRepository(temp_json_file) as repo:
+        repo.add(snippet_one)
+        repo.add(snippet_two)
+
+    with JSONRepository(temp_json_file) as repo:
+        assert (
+            repo.delete("10")
+            == "Snippet ID: 10 was deleted and removed from the Snippet Repository"
+        )
+
+    with open(temp_json_file) as file:
+        final = json.load(file)
+        assert len(final) == 1

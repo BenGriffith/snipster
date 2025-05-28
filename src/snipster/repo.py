@@ -1,3 +1,4 @@
+import json
 from abc import ABC, abstractmethod
 
 from sqlmodel import select
@@ -33,6 +34,12 @@ class InMemoryRepository(SnippetRepository):
         id = str(snippet["id"])
         if id in self.repository:
             raise SnippetExists(id)
+        language = snippet["language"]
+        created_at = snippet["created_at"]
+        updated_at = snippet["updated_at"]
+        snippet["language"] = language.value
+        snippet["created_at"] = created_at.strftime("%Y-%m-%d %H:%M:%S %Z")
+        snippet["updated_at"] = updated_at.strftime("%Y-%m-%d %H:%M:%S %Z")
         self.repository[id] = snippet
         return f"Snippet ID: {id} was created and added to the Snippet Repository"
 
@@ -91,3 +98,18 @@ class DatastoreRepository(SnippetRepository):
                 f"Snippet ID: {id} was deleted and removed from the Snippet Repository"
             )
         raise SnippetNotFound(snippet_id)
+
+
+class JSONRepository(InMemoryRepository):
+    def __init__(self, file):
+        super().__init__()
+        self.file = file
+
+    def __enter__(self):
+        with open(self.file) as file:
+            self.repository = json.load(file)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        with open(self.file, "w") as file:
+            json.dump(self.repository, file)

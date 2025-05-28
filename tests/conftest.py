@@ -52,3 +52,10 @@ def snippet_two():
 @pytest.fixture()
 def repo_in_datastore(session):
     return DatastoreRepository(session)
+
+
+@pytest.fixture()
+def temp_json_file(tmp_path):
+    file_path = tmp_path / "test.json"
+    file_path.write_text("{}")
+    return file_path
