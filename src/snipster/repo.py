@@ -1,5 +1,7 @@
 import json
 from abc import ABC, abstractmethod
+from datetime import datetime
+from enum import Enum
 
 from sqlmodel import select
 
@@ -34,12 +36,6 @@ class InMemoryRepository(SnippetRepository):
         id = str(snippet["id"])
         if id in self.repository:
             raise SnippetExists(id)
-        language = snippet["language"]
-        created_at = snippet["created_at"]
-        updated_at = snippet["updated_at"]
-        snippet["language"] = language.value
-        snippet["created_at"] = created_at.strftime("%Y-%m-%d %H:%M:%S %Z")
-        snippet["updated_at"] = updated_at.strftime("%Y-%m-%d %H:%M:%S %Z")
         self.repository[id] = snippet
         return f"Snippet ID: {id} was created and added to the Snippet Repository"
 
@@ -100,6 +96,15 @@ class DatastoreRepository(SnippetRepository):
         raise SnippetNotFound(snippet_id)
 
 
+class CustomEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Enum):
+            return obj.value
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
+
+
 class JSONRepository(InMemoryRepository):
     def __init__(self, file):
         super().__init__()
@@ -112,4 +117,4 @@ class JSONRepository(InMemoryRepository):
 
     def __exit__(self, exc_type, exc_value, traceback):
         with open(self.file, "w") as file:
-            json.dump(self.repository, file)
+            json.dump(self.repository, file, cls=CustomEncoder)
