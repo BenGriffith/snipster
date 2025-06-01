@@ -44,7 +44,7 @@ def snippet_two():
         description=None,
         language=Language.PYTHON,
         tags=None,
-        favorite=False,
+        favorite=True,
     )
     return snippet
 

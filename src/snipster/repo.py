@@ -26,6 +26,10 @@ class SnippetRepository(ABC):
     def delete(self, snippet_id):
         pass
 
+    @abstractmethod
+    def toggle_favorite(self, snippet_id):
+        pass
+
 
 class InMemoryRepository(SnippetRepository):
     def __init__(self):
@@ -52,6 +56,11 @@ class InMemoryRepository(SnippetRepository):
             del self.repository[snippet_id]
             return f"Snippet ID: {snippet_id} was deleted and removed from the Snippet Repository"
         raise SnippetNotFound(snippet_id)
+
+    def toggle_favorite(self, snippet_id):
+        _favorite = self.repository[snippet_id]["favorite"]
+        self.repository[snippet_id]["favorite"] = not _favorite
+        return f"Snippet ID: {snippet_id} favorite updated from {_favorite} to {self.repository[snippet_id]['favorite']}"
 
 
 class DatastoreRepository(SnippetRepository):
@@ -93,6 +102,18 @@ class DatastoreRepository(SnippetRepository):
             return (
                 f"Snippet ID: {id} was deleted and removed from the Snippet Repository"
             )
+        raise SnippetNotFound(snippet_id)
+
+    def toggle_favorite(self, snippet_id):
+        query = select(Snippet).where(Snippet.id == snippet_id)
+        result = self.session.exec(query).first()
+        if result:
+            _favorite = result.favorite
+            result.favorite = not result.favorite
+            self.session.add(result)
+            self.session.commit()
+            self.session.refresh(result)
+            return f"Snippet ID: {result.id} favorite updated from {_favorite} to {result.favorite}"
         raise SnippetNotFound(snippet_id)
 
 

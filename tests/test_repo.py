@@ -111,3 +111,38 @@ def test_json_repository_delete(temp_json_file, snippet_one, snippet_two):
     with open(temp_json_file) as file:
         final = json.load(file)
         assert len(final) == 1
+
+
+def test_in_memory_toggle_favorite(repo_in_memory):
+    assert repo_in_memory.repository["1"]["favorite"] is True
+    message = repo_in_memory.toggle_favorite("1")
+    assert message == "Snippet ID: 1 favorite updated from True to False"
+    assert repo_in_memory.repository["1"]["favorite"] is False
+
+
+def test_datastore_toggle_favorite(repo_in_datastore, snippet_two):
+    repo_in_datastore.add(snippet_two)
+    snippet = repo_in_datastore.get(2)
+    assert snippet["favorite"] is True
+
+    message = repo_in_datastore.toggle_favorite(2)
+    assert message == "Snippet ID: 2 favorite updated from True to False"
+
+    snippet = repo_in_datastore.get(2)
+    assert snippet["favorite"] is False
+
+
+def test_datastore_toggle_favorite_error(repo_in_datastore):
+    with pytest.raises(SnippetNotFound):
+        repo_in_datastore.toggle_favorite(100)
+
+
+def test_json_repository_toggle_favorite(temp_json_file, snippet_one, snippet_two):
+    snippet_one.id = 10
+    snippet_two.id = 20
+    with JSONRepository(temp_json_file) as repo:
+        repo.add(snippet_one)
+        repo.add(snippet_two)
+        assert repo.repository["10"]["favorite"] is True
+        repo.toggle_favorite("10")
+        assert repo.repository["10"]["favorite"] is False
