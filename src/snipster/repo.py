@@ -37,15 +37,15 @@ class SnippetRepository(ABC):
         pass
 
     @abstractmethod
-    def tag(self, snippet_id, tag, remove=False):
+    def tag(self, snippet_id, *tags, remove=False):
         pass
 
     @abstractmethod
-    def _add_tag(self, snippet_id, tag, tags):
+    def _add_tag(self, snippet_id, *tags, existing_tags):
         pass
 
     @abstractmethod
-    def _remove_tag(self, snippet_id, tag, tags):
+    def _remove_tag(self, snippet_id, *tags, existing_tags):
         pass
 
 
@@ -80,25 +80,21 @@ class InMemoryRepository(SnippetRepository):
         self.repository[snippet_id]["favorite"] = not _favorite
         return f"Snippet ID: {snippet_id} favorite updated from {_favorite} to {self.repository[snippet_id]['favorite']}"
 
-    def tag(self, snippet_id, tag, remove=False):
-        tags = self.repository[snippet_id]["tags"]
-        if tags is None:
-            tags = []
-        try:
-            if remove:
-                return self._remove_tag(snippet_id, tag, tags)
-            return self._add_tag(snippet_id, tag, tags)
-        except (TagExists, TagNotFound):
-            raise
+    def tag(self, snippet_id, *tags, remove=False):
+        existing = self.repository[snippet_id].get("tags", "")
+        existing_tags = existing.split(", ") if existing else []
 
-    def _add_tag(self, snippet_id, tag, tags):
-        if tag in tags:
-            raise TagExists(snippet_id, tag)
-        if len(tags) > 0:
-            tags = tags.split(", ")
-        tags.append(tag)
-        self.repository[snippet_id]["tags"] = ", ".join(tags)
-        return f"{tag} added to Tags for Snippet ID: {snippet_id}"
+        if remove:
+            return self._remove_tag(snippet_id, *tags, existing_tags)
+        return self._add_tag(snippet_id, *tags, existing_tags)
+
+    def _add_tag(self, snippet_id, *tags, existing_tags):
+        conflict = [tag for tag in tags if tag in existing_tags]
+        if conflict:
+            raise TagExists(snippet_id, conflict)
+        updated = existing_tags + list(*tags)
+        self.repository[snippet_id]["tags"] = ", ".join(updated)
+        return f"Tags {*tags} added for Snippet ID: {snippet_id}"
 
     def _remove_tag(self, snippet_id, tag, tags):
         if len(tags) == 0:
