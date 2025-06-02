@@ -5,7 +5,13 @@ from enum import Enum
 
 from sqlmodel import select
 
-from src.snipster.exceptions import SnippetExists, SnippetNotFound
+from src.snipster.exceptions import (
+    NoTagsPresent,
+    SnippetExists,
+    SnippetNotFound,
+    TagExists,
+    TagNotFound,
+)
 from src.snipster.models import Snippet
 
 
@@ -28,6 +34,18 @@ class SnippetRepository(ABC):
 
     @abstractmethod
     def toggle_favorite(self, snippet_id):
+        pass
+
+    @abstractmethod
+    def tag(self, snippet_id, tag, remove=False):
+        pass
+
+    @abstractmethod
+    def _add_tag(self, snippet_id, tag, tags):
+        pass
+
+    @abstractmethod
+    def _remove_tag(self, snippet_id, tag, tags):
         pass
 
 
@@ -61,6 +79,36 @@ class InMemoryRepository(SnippetRepository):
         _favorite = self.repository[snippet_id]["favorite"]
         self.repository[snippet_id]["favorite"] = not _favorite
         return f"Snippet ID: {snippet_id} favorite updated from {_favorite} to {self.repository[snippet_id]['favorite']}"
+
+    def tag(self, snippet_id, tag, remove=False):
+        tags = self.repository[snippet_id]["tags"]
+        if tags is None:
+            tags = []
+        try:
+            if remove:
+                return self._remove_tag(snippet_id, tag, tags)
+            return self._add_tag(snippet_id, tag, tags)
+        except (TagExists, TagNotFound):
+            raise
+
+    def _add_tag(self, snippet_id, tag, tags):
+        if tag in tags:
+            raise TagExists(snippet_id, tag)
+        if len(tags) > 0:
+            tags = tags.split(", ")
+        tags.append(tag)
+        self.repository[snippet_id]["tags"] = ", ".join(tags)
+        return f"{tag} added to Tags for Snippet ID: {snippet_id}"
+
+    def _remove_tag(self, snippet_id, tag, tags):
+        if len(tags) == 0:
+            raise NoTagsPresent(snippet_id)
+        if tag not in tags:
+            raise TagNotFound(snippet_id, tag)
+        tags = tags.split(", ")
+        tags.remove(tag)
+        self.repository[snippet_id]["tags"] = ", ".join(tags)
+        return f"{tag} removed from Tags for Snippet ID: {snippet_id}"
 
 
 class DatastoreRepository(SnippetRepository):
@@ -115,6 +163,15 @@ class DatastoreRepository(SnippetRepository):
             self.session.refresh(result)
             return f"Snippet ID: {result.id} favorite updated from {_favorite} to {result.favorite}"
         raise SnippetNotFound(snippet_id)
+
+    def tag(self, snippet_id, tag, remove=False):
+        pass
+
+    def _add_tag(self, snippet_id, tag, tags):
+        pass
+
+    def _remove_tag(self, snippet_id, tag, tags):
+        pass
 
 
 class CustomEncoder(json.JSONEncoder):
