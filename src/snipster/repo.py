@@ -41,7 +41,7 @@ class SnippetRepository(ABC):
         pass
 
     @abstractmethod
-    def _add_tag(self, snippet_id, *tags, existing_tags):
+    def _add_tag(self, snippet_id, *tags, exiting_tags):
         pass
 
     @abstractmethod
@@ -83,28 +83,29 @@ class InMemoryRepository(SnippetRepository):
     def tag(self, snippet_id, *tags, remove=False):
         existing = self.repository[snippet_id].get("tags", "")
         existing_tags = existing.split(", ") if existing else []
-
         if remove:
-            return self._remove_tag(snippet_id, *tags, existing_tags)
-        return self._add_tag(snippet_id, *tags, existing_tags)
+            return self._remove_tag(snippet_id, *tags, existing_tags=existing_tags)
+        return self._add_tag(snippet_id, *tags, existing_tags=existing_tags)
 
     def _add_tag(self, snippet_id, *tags, existing_tags):
         conflict = [tag for tag in tags if tag in existing_tags]
         if conflict:
             raise TagExists(snippet_id, conflict)
-        updated = existing_tags + list(*tags)
+        updated = existing_tags + list(tags)
         self.repository[snippet_id]["tags"] = ", ".join(updated)
-        return f"Tags {*tags} added for Snippet ID: {snippet_id}"
+        return f"Tags {tags} were added for Snippet ID: {snippet_id}"
 
-    def _remove_tag(self, snippet_id, tag, tags):
-        if len(tags) == 0:
+    def _remove_tag(self, snippet_id, *tags, existing_tags):
+        if not existing_tags:
             raise NoTagsPresent(snippet_id)
-        if tag not in tags:
-            raise TagNotFound(snippet_id, tag)
-        tags = tags.split(", ")
-        tags.remove(tag)
-        self.repository[snippet_id]["tags"] = ", ".join(tags)
-        return f"{tag} removed from Tags for Snippet ID: {snippet_id}"
+
+        missing = [tag for tag in tags if tag not in existing_tags]
+        if missing:
+            raise TagNotFound(snippet_id, missing)
+
+        updated = [tag for tag in existing_tags if tag not in tags]
+        self.repository[snippet_id]["tags"] = ", ".join(updated)
+        return f"Tags {tags} were removed from Snippet ID: {snippet_id}"
 
 
 class DatastoreRepository(SnippetRepository):

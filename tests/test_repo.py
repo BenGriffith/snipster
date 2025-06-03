@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from src.snipster.exceptions import SnippetExists, SnippetNotFound
+from src.snipster.exceptions import SnippetExists, SnippetNotFound, TagExists
 from src.snipster.repo import JSONRepository
 
 
@@ -146,3 +146,26 @@ def test_json_repository_toggle_favorite(temp_json_file, snippet_one, snippet_tw
         assert repo.repository["10"]["favorite"] is True
         repo.toggle_favorite("10")
         assert repo.repository["10"]["favorite"] is False
+
+
+def test_in_memory_add_tag(repo_in_memory):
+    message = repo_in_memory.tag("1", "python")
+    assert message == "Tags ('python',) were added for Snippet ID: 1"
+
+
+def test_in_memory_add_tags(repo_in_memory):
+    message = repo_in_memory.tag("1", "json", "sql")
+    assert message == "Tags ('json', 'sql') were added for Snippet ID: 1"
+
+
+def test_in_memory_add_tags_error(repo_in_memory):
+    with pytest.raises(TagExists):
+        repo_in_memory.tag("1", "python")
+
+
+def test_in_memory_remove_tags(repo_in_memory):
+    repo_in_memory.tag("1", "rust", "dry")
+    assert len(repo_in_memory.repository["1"]["tags"].split(", ")) == 5
+    message = repo_in_memory.tag("1", "json", "python", remove=True)
+    assert message == "Tags ('json', 'python') were removed from Snippet ID: 1"
+    assert len(repo_in_memory.repository["1"]["tags"].split(", ")) == 3
