@@ -23,6 +23,6 @@ class TagNotFound(BaseException):
 
 
 class NoTagsPresent(BaseException):
-    def __init__(self, snippet_id, tag):
+    def __init__(self, snippet_id):
         self.message = "Please add a tag before trying to remove tags"
         super().__init__(self.message)

@@ -2,7 +2,13 @@ import json
 
 import pytest
 
-from src.snipster.exceptions import SnippetExists, SnippetNotFound, TagExists
+from src.snipster.exceptions import (
+    NoTagsPresent,
+    SnippetExists,
+    SnippetNotFound,
+    TagExists,
+    TagNotFound,
+)
 from src.snipster.repo import JSONRepository
 
 
@@ -169,3 +175,13 @@ def test_in_memory_remove_tags(repo_in_memory):
     message = repo_in_memory.tag("1", "json", "python", remove=True)
     assert message == "Tags ('json', 'python') were removed from Snippet ID: 1"
     assert len(repo_in_memory.repository["1"]["tags"].split(", ")) == 3
+
+
+def test_in_memory_remove_tag_error(repo_in_memory):
+    with pytest.raises(TagNotFound):
+        repo_in_memory.tag("1", "javascript", remove=True)
+
+    repo_in_memory.tag("1", "sql", "rust", "dry", remove=True)
+
+    with pytest.raises(NoTagsPresent):
+        repo_in_memory.tag("1", "python", remove=True)
