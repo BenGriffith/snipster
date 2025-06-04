@@ -185,3 +185,39 @@ def test_in_memory_remove_tag_error(repo_in_memory):
 
     with pytest.raises(NoTagsPresent):
         repo_in_memory.tag("1", "python", remove=True)
+
+
+def test_datastore_add_tag(repo_in_datastore):
+    message = repo_in_datastore.tag(1, "python")
+    assert message == "Tags ('python',) were added for Snippet ID: 1"
+
+
+def test_datastore_add_tags(repo_in_datastore):
+    message = repo_in_datastore.tag(1, "json", "javascript", "typescript")
+    assert (
+        message
+        == "Tags ('json', 'javascript', 'typescript') were added for Snippet ID: 1"
+    )
+
+
+def test_datastore_add_tags_error(repo_in_datastore):
+    with pytest.raises(TagExists):
+        repo_in_datastore.tag(1, "python")
+
+
+def test_datastore_remove_tag(repo_in_datastore):
+    message = repo_in_datastore.tag(1, "python", "json", "typescript", remove=True)
+    assert (
+        message
+        == "Tags ('python', 'json', 'typescript') were removed from Snippet ID: 1"
+    )
+
+
+def test_datastore_remove_tag_error(repo_in_datastore):
+    with pytest.raises(TagNotFound):
+        repo_in_datastore.tag(1, "django", remove=True)
+
+    repo_in_datastore.tag(1, "javascript", remove=True)
+
+    with pytest.raises(NoTagsPresent):
+        repo_in_datastore.tag(1, "python", remove=True)

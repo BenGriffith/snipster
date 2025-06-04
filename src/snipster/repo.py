@@ -38,15 +38,40 @@ class SnippetRepository(ABC):
 
     @abstractmethod
     def tag(self, snippet_id, *tags, remove=False):
+        existing_tags = self._existing_tag(snippet_id)
+        if remove:
+            return self._remove_tag(snippet_id, *tags, existing_tags=existing_tags)
+        return self._add_tag(snippet_id, *tags, existing_tags=existing_tags)
+
+    @abstractmethod
+    def _existing_tag(self, snippet_id):
         pass
 
     @abstractmethod
-    def _add_tag(self, snippet_id, *tags, exiting_tags):
+    def _save_tag(self, snippet_id, updated):
         pass
+
+    @abstractmethod
+    def _add_tag(self, snippet_id, *tags, existing_tags):
+        conflict = [tag for tag in tags if tag in existing_tags]
+        if conflict:
+            raise TagExists(snippet_id, conflict)
+        updated = existing_tags + list(tags)
+        self._save_tag(snippet_id, updated)
+        return f"Tags {tags} were added for Snippet ID: {snippet_id}"
 
     @abstractmethod
     def _remove_tag(self, snippet_id, *tags, existing_tags):
-        pass
+        if not existing_tags:
+            raise NoTagsPresent(snippet_id)
+
+        missing = [tag for tag in tags if tag not in existing_tags]
+        if missing:
+            raise TagNotFound(snippet_id, missing)
+
+        updated = [tag for tag in existing_tags if tag not in tags]
+        self._save_tag(snippet_id, updated)
+        return f"Tags {tags} were removed from Snippet ID: {snippet_id}"
 
 
 class InMemoryRepository(SnippetRepository):
@@ -81,31 +106,26 @@ class InMemoryRepository(SnippetRepository):
         return f"Snippet ID: {snippet_id} favorite updated from {_favorite} to {self.repository[snippet_id]['favorite']}"
 
     def tag(self, snippet_id, *tags, remove=False):
+        base_result = super().tag(snippet_id, *tags, remove=remove)
+        return f"{base_result}"
+
+    def _existing_tag(self, snippet_id):
         existing = self.repository[snippet_id].get("tags", "")
         existing_tags = existing.split(", ") if existing else []
-        if remove:
-            return self._remove_tag(snippet_id, *tags, existing_tags=existing_tags)
-        return self._add_tag(snippet_id, *tags, existing_tags=existing_tags)
+        return existing_tags
+
+    def _save_tag(self, snippet_id, updated):
+        self.repository[snippet_id]["tags"] = ", ".join(updated)
 
     def _add_tag(self, snippet_id, *tags, existing_tags):
-        conflict = [tag for tag in tags if tag in existing_tags]
-        if conflict:
-            raise TagExists(snippet_id, conflict)
-        updated = existing_tags + list(tags)
-        self.repository[snippet_id]["tags"] = ", ".join(updated)
-        return f"Tags {tags} were added for Snippet ID: {snippet_id}"
+        base_result = super()._add_tag(snippet_id, *tags, existing_tags=existing_tags)
+        return f"{base_result}"
 
     def _remove_tag(self, snippet_id, *tags, existing_tags):
-        if not existing_tags:
-            raise NoTagsPresent(snippet_id)
-
-        missing = [tag for tag in tags if tag not in existing_tags]
-        if missing:
-            raise TagNotFound(snippet_id, missing)
-
-        updated = [tag for tag in existing_tags if tag not in tags]
-        self.repository[snippet_id]["tags"] = ", ".join(updated)
-        return f"Tags {tags} were removed from Snippet ID: {snippet_id}"
+        base_result = super()._remove_tag(
+            snippet_id, *tags, existing_tags=existing_tags
+        )
+        return f"{base_result}"
 
 
 class DatastoreRepository(SnippetRepository):
@@ -161,14 +181,34 @@ class DatastoreRepository(SnippetRepository):
             return f"Snippet ID: {result.id} favorite updated from {_favorite} to {result.favorite}"
         raise SnippetNotFound(snippet_id)
 
-    def tag(self, snippet_id, tag, remove=False):
-        pass
+    def tag(self, snippet_id, *tags, remove=False):
+        base_result = super().tag(snippet_id, *tags, remove=remove)
+        return f"{base_result}"
 
-    def _add_tag(self, snippet_id, tag, tags):
-        pass
+    def _existing_tag(self, snippet_id, *tags, remove=False):
+        query = select(Snippet).where(Snippet.id == snippet_id)
+        result = self.session.exec(query).first()
+        existing_tags = result.tags.split(", ") if result.tags else []
+        return existing_tags
 
-    def _remove_tag(self, snippet_id, tag, tags):
-        pass
+    def _save_tag(self, snippet_id, updated):
+        query = select(Snippet).where(Snippet.id == snippet_id)
+        result = self.session.exec(query).first()
+        result.tags = ", ".join(updated)
+
+        self.session.add(result)
+        self.session.commit()
+        self.session.refresh(result)
+
+    def _add_tag(self, snippet_id, *tags, existing_tags):
+        base_result = super()._add_tag(snippet_id, *tags, existing_tags=existing_tags)
+        return f"{base_result}"
+
+    def _remove_tag(self, snippet_id, *tags, existing_tags):
+        base_result = super()._remove_tag(
+            snippet_id, *tags, existing_tags=existing_tags
+        )
+        return f"{base_result}"
 
 
 class CustomEncoder(json.JSONEncoder):
