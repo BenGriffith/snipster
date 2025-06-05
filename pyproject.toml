@@ -8,6 +8,8 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "psycopg2>=2.9.10",
+    "python-decouple>=3.8",
     "sqlmodel>=0.0.24",
 ]
 
@@ -20,5 +22,6 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "psycopg2-binary>=2.9.10",
     "pytest-cov>=6.1.1",
 ]
