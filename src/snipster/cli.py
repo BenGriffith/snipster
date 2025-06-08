@@ -9,8 +9,9 @@ app = typer.Typer()
 
 @app.callback()
 def init(ctx: typer.Context):
-    engine = create_engine(DATABASE_URL)
-    ctx.obj = DatastoreRepository(Session(engine))
+    if ctx.obj is None:
+        engine = create_engine(DATABASE_URL)
+        ctx.obj = DatastoreRepository(Session(engine))
 
 
 @app.command()
@@ -68,7 +69,7 @@ def delete(
 
 
 @app.command()
-def toggle_favorite(
+def favorite(
     ctx: typer.Context,
     id: int = typer.Option(..., help="Snippet ID to mark or unmark as favorite"),
 ):
