@@ -1,8 +1,11 @@
 from datetime import datetime, timezone
 from enum import Enum
 
+from decouple import config
 from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlmodel import Column, Field, SQLModel, create_engine
+
+DATABASE_URL = config("DATABASE_URL", cast=str)
 
 
 class Language(Enum):
@@ -28,5 +31,5 @@ class Snippet(SQLModel, table=True):
 
 
 if __name__ == "__main__":
-    engine = create_engine("sqlite:///snippets.db")
+    engine = create_engine(DATABASE_URL)
     SQLModel.metadata.create_all(engine)
