@@ -5,14 +5,14 @@ from enum import Enum
 
 from sqlmodel import select
 
-from src.snipster.exceptions import (
+from snipster.exceptions import (
     NoTagsPresent,
     SnippetExists,
     SnippetNotFound,
     TagExists,
     TagNotFound,
 )
-from src.snipster.models import Snippet
+from snipster.models import Snippet
 
 
 class SnippetRepository(ABC):

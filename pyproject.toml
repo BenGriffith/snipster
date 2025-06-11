@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "fastapi[all]>=0.115.12",
     "psycopg2>=2.9.10",
     "python-decouple>=3.8",
     "sqlmodel>=0.0.24",
