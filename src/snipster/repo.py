@@ -1,6 +1,6 @@
 import json
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 from sqlmodel import select
@@ -175,6 +175,7 @@ class DatastoreRepository(SnippetRepository):
         if result:
             _favorite = result.favorite
             result.favorite = not result.favorite
+            result.updated_at = datetime.now(timezone.utc)
             self.session.add(result)
             self.session.commit()
             self.session.refresh(result)
@@ -195,7 +196,7 @@ class DatastoreRepository(SnippetRepository):
         query = select(Snippet).where(Snippet.id == snippet_id)
         result = self.session.exec(query).first()
         result.tags = ", ".join(updated)
-
+        result.updated_at = datetime.now(timezone.utc)
         self.session.add(result)
         self.session.commit()
         self.session.refresh(result)
