@@ -1,3 +1,3 @@
-from src.snipster.cli import app
+from snipster.cli import app
 
 app()

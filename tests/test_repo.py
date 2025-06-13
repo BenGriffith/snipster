@@ -2,14 +2,14 @@ import json
 
 import pytest
 
-from src.snipster.exceptions import (
+from snipster.exceptions import (
     NoTagsPresent,
     SnippetExists,
     SnippetNotFound,
     TagExists,
     TagNotFound,
 )
-from src.snipster.repo import JSONRepository
+from snipster.repo import JSONRepository
 
 
 def test_in_memory_add(repo_in_memory, snippet_one):
@@ -56,24 +56,28 @@ def test_datastore_add(repo_in_datastore, snippet_one):
 
 
 def test_datastore_add_error(repo_in_datastore, snippet_one):
-    snippet_one.id = 1
+    repo_in_datastore.add(snippet_one)
     with pytest.raises(SnippetExists):
         repo_in_datastore.add(snippet_one)
 
 
-def test_datastore_get_all(repo_in_datastore, snippet_two):
+def test_datastore_get_all(repo_in_datastore, snippet_one, snippet_two):
+    repo_in_datastore.add(snippet_one)
     repo_in_datastore.add(snippet_two)
     result = repo_in_datastore.all()
     assert len(result) == 2
 
 
-def test_datastore_get(repo_in_datastore):
+def test_datastore_get(repo_in_datastore, snippet_one):
+    repo_in_datastore.add(snippet_one)
     result = repo_in_datastore.get(1)
     assert result["title"] == "first snippet"
     assert result["code"] == "print('hello world')"
 
 
-def test_datastore_delete(repo_in_datastore):
+def test_datastore_delete(repo_in_datastore, snippet_one, snippet_two):
+    repo_in_datastore.add(snippet_one)
+    repo_in_datastore.add(snippet_two)
     result = repo_in_datastore.delete(2)
     assert result == "Snippet ID: 2 was deleted and removed from the Snippet Repository"
 
@@ -126,7 +130,8 @@ def test_in_memory_toggle_favorite(repo_in_memory):
     assert repo_in_memory.repository["1"]["favorite"] is False
 
 
-def test_datastore_toggle_favorite(repo_in_datastore, snippet_two):
+def test_datastore_toggle_favorite(repo_in_datastore, snippet_one, snippet_two):
+    repo_in_datastore.add(snippet_one)
     repo_in_datastore.add(snippet_two)
     snippet = repo_in_datastore.get(2)
     assert snippet["favorite"] is True
@@ -187,12 +192,14 @@ def test_in_memory_remove_tag_error(repo_in_memory):
         repo_in_memory.tag("1", "python", remove=True)
 
 
-def test_datastore_add_tag(repo_in_datastore):
+def test_datastore_add_tag(repo_in_datastore, snippet_one):
+    repo_in_datastore.add(snippet_one)
     message = repo_in_datastore.tag(1, "python")
     assert message == "Tags ('python',) were added for Snippet ID: 1"
 
 
-def test_datastore_add_tags(repo_in_datastore):
+def test_datastore_add_tags(repo_in_datastore, snippet_one):
+    repo_in_datastore.add(snippet_one)
     message = repo_in_datastore.tag(1, "json", "javascript", "typescript")
     assert (
         message
@@ -200,12 +207,16 @@ def test_datastore_add_tags(repo_in_datastore):
     )
 
 
-def test_datastore_add_tags_error(repo_in_datastore):
+def test_datastore_add_tags_error(repo_in_datastore, snippet_one):
+    repo_in_datastore.add(snippet_one)
+    repo_in_datastore.tag(1, "python")
     with pytest.raises(TagExists):
         repo_in_datastore.tag(1, "python")
 
 
-def test_datastore_remove_tag(repo_in_datastore):
+def test_datastore_remove_tag(repo_in_datastore, snippet_one):
+    repo_in_datastore.add(snippet_one)
+    repo_in_datastore.tag(1, "python", "json", "typescript")
     message = repo_in_datastore.tag(1, "python", "json", "typescript", remove=True)
     assert (
         message
@@ -213,11 +224,13 @@ def test_datastore_remove_tag(repo_in_datastore):
     )
 
 
-def test_datastore_remove_tag_error(repo_in_datastore):
+def test_datastore_remove_tag_error(repo_in_datastore, snippet_one):
+    repo_in_datastore.add(snippet_one)
+    repo_in_datastore.tag(1, "python")
     with pytest.raises(TagNotFound):
         repo_in_datastore.tag(1, "django", remove=True)
 
-    repo_in_datastore.tag(1, "javascript", remove=True)
+    repo_in_datastore.tag(1, "python", remove=True)
 
     with pytest.raises(NoTagsPresent):
         repo_in_datastore.tag(1, "python", remove=True)
