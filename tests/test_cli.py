@@ -1,6 +1,6 @@
 from typer.testing import CliRunner
 
-from src.snipster.cli import app
+from snipster.cli import app
 
 runner = CliRunner()
 
@@ -52,6 +52,19 @@ def test_cli_all(repo_in_datastore):
         [
             "add",
             "--title",
+            "second snippet",
+            "--code",
+            "print('boom goes the dynamite')",
+            "--language",
+            "python",
+        ],
+        obj=repo_in_datastore,
+    )
+    runner.invoke(
+        app,
+        [
+            "add",
+            "--title",
             "third snippet",
             "--code",
             "def hello_word(): print('hello world')",
@@ -62,11 +75,24 @@ def test_cli_all(repo_in_datastore):
     )
     result = runner.invoke(app, ["all"], obj=repo_in_datastore)
     assert result.exit_code == 0
-    assert "first_snippet" in result.output
+    assert "second snippet" in result.output
     assert "third snippet" in result.output
 
 
 def test_cli_get(repo_in_datastore):
+    runner.invoke(
+        app,
+        [
+            "add",
+            "--title",
+            "first_snippet",
+            "--code",
+            "print('hello world')",
+            "--language",
+            "python",
+        ],
+        obj=repo_in_datastore,
+    )
     result = runner.invoke(app, ["get", "--id", "1"], obj=repo_in_datastore)
     assert result.exit_code == 0
     assert "first_snippet" in result.output
@@ -79,15 +105,41 @@ def test_cli_get_none(repo_in_datastore):
 
 
 def test_cli_delete(repo_in_datastore):
-    result = runner.invoke(app, ["delete", "--id", "2"], obj=repo_in_datastore)
+    runner.invoke(
+        app,
+        [
+            "add",
+            "--title",
+            "first snippet",
+            "--code",
+            "print('show me the money')",
+            "--language",
+            "python",
+        ],
+        obj=repo_in_datastore,
+    )
+    result = runner.invoke(app, ["delete", "--id", "1"], obj=repo_in_datastore)
     assert result.exit_code == 0
     assert (
         result.output
-        == "Snippet ID: 2 was deleted and removed from the Snippet Repository\n"
+        == "Snippet ID: 1 was deleted and removed from the Snippet Repository\n"
     )
 
 
 def test_cli_toggle_favorite(repo_in_datastore):
+    runner.invoke(
+        app,
+        [
+            "add",
+            "--title",
+            "first code snippet",
+            "--code",
+            "float('inf')",
+            "--language",
+            "python",
+        ],
+        obj=repo_in_datastore,
+    )
     result = runner.invoke(app, ["favorite", "--id", "1"], obj=repo_in_datastore)
     assert result.exit_code == 0
     assert result.output == "Snippet ID: 1 favorite updated from False to True\n"
@@ -97,6 +149,20 @@ def test_cli_toggle_favorite(repo_in_datastore):
 
 
 def test_cli_tag_add(repo_in_datastore):
+    runner.invoke(
+        app,
+        [
+            "add",
+            "--title",
+            "another snippet",
+            "--code",
+            "print('light phone III')",
+            "--language",
+            "python",
+        ],
+        obj=repo_in_datastore,
+    )
+
     result = runner.invoke(
         app, ["tag", "--id", "1", "--tags", "python, print, win"], obj=repo_in_datastore
     )
@@ -109,7 +175,3 @@ def test_cli_tag_add(repo_in_datastore):
     )
     assert result.exit_code == 0
     assert result.output == "Tags ('print',) were removed from Snippet ID: 1\n"
-
-
-def test_cli_tag_remove(repo_in_datastore):
-    pass

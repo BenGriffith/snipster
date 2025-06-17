@@ -1,8 +1,8 @@
 import typer
 from sqlmodel import Session
 
-from src.snipster.models import DATABASE_URL, Language, Snippet, create_engine
-from src.snipster.repo import DatastoreRepository
+from snipster.models import DATABASE_URL, Language, Snippet, create_engine
+from snipster.repo import DatastoreRepository
 
 app = typer.Typer()
 
