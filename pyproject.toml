@@ -11,6 +11,8 @@ dependencies = [
     "fastapi[all]>=0.115.12",
     "psycopg2>=2.9.10",
     "python-decouple>=3.8",
+    "reflex>=0.7.14",
+    "requests>=2.32.4",
     "sqlmodel>=0.0.24",
     "typer>=0.16.0",
 ]
